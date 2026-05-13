@@ -49,9 +49,10 @@ export default function DashboardLive({
           fetch(`/api/latest?device_id=${encodeURIComponent(deviceId)}`, {
             cache: "no-store",
           }),
-          fetch(`/api/measurements?device_id=${encodeURIComponent(deviceId)}&limit=100`, {
-            cache: "no-store",
-          }),
+          fetch(
+            `/api/measurements?device_id=${encodeURIComponent(deviceId)}&limit=100`,
+            { cache: "no-store" }
+          ),
         ]);
         const latestJson = await latestRes.json();
         const historyJson = await historyRes.json();
@@ -61,7 +62,7 @@ export default function DashboardLive({
         setError(null);
       } catch (e) {
         console.error(e);
-        if (mounted) setError("No se pudo cargar la información");
+        if (mounted) setError("Could not load the data");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -77,7 +78,7 @@ export default function DashboardLive({
   }, [deviceId]);
 
   const lastUpdate = latest
-    ? new Date(latest.ts).toLocaleString("es-CO", {
+    ? new Date(latest.ts).toLocaleString("en-US", {
         dateStyle: "medium",
         timeStyle: "medium",
       })
@@ -88,12 +89,14 @@ export default function DashboardLive({
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            Datos en tiempo real
+            Real-time data
           </h2>
           <p className="mt-1 text-sm text-slate-400">
-            Última lectura: <span className="font-mono text-emerald-300">{lastUpdate}</span>
+            Last reading:{" "}
+            <span className="font-mono text-emerald-300">{lastUpdate}</span>
             {" · "}
-            Dispositivo: <span className="font-mono text-indigo-300">{deviceId}</span>
+            Device:{" "}
+            <span className="font-mono text-indigo-300">{deviceId}</span>
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -101,7 +104,7 @@ export default function DashboardLive({
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
-          Actualizando cada 10 s
+          Refreshing every 10 s
         </div>
       </div>
 
@@ -113,91 +116,100 @@ export default function DashboardLive({
 
       {loading && !latest && (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-slate-400">
-          Cargando...
+          Loading...
+        </div>
+      )}
+
+      {!loading && !latest && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-slate-400">
+          No data yet. Once the trap publishes its first measurement it will
+          appear here.
         </div>
       )}
 
       {latest && (
         <>
-          {/* Sensores */}
+          {/* Sensors */}
           <div className="grid gap-4 sm:grid-cols-3">
             <SensorCard
               icon={<Thermometer className="h-5 w-5" />}
-              label="Temperatura"
+              label="Temperature"
               value={latest.temp.toFixed(2)}
               unit="°C"
               accent="amber"
             />
             <SensorCard
               icon={<Gauge className="h-5 w-5" />}
-              label="Presión"
+              label="Pressure"
               value={latest.pres.toFixed(2)}
               unit="hPa"
               accent="indigo"
             />
             <SensorCard
               icon={<Mountain className="h-5 w-5" />}
-              label="Altitud"
+              label="Altitude"
               value={latest.alt.toFixed(2)}
               unit="m"
               accent="emerald"
             />
           </div>
 
-          {/* Actuadores */}
+          {/* Actuators */}
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <ActuatorCard
               icon={<Lightbulb className="h-5 w-5" />}
-              title="Luz Atractora"
-              subtitle="LED UV-A"
+              title="Attraction Light"
+              subtitle="UV-A LED"
               active={latest.led}
             />
             <ActuatorCard
               icon={<Wind className="h-5 w-5" />}
-              title="Ventilador"
-              subtitle="Sistema de captura"
+              title="Fan"
+              subtitle="Capture system"
               active={latest.fan}
             />
           </div>
 
-          {/* Estado de ventanas */}
+          {/* Window status */}
           <div className="mt-12">
             <h3 className="text-lg font-semibold text-white">
-              Estado de ventanas de operación
+              Operating windows status
             </h3>
             <p className="mt-1 text-sm text-slate-400">
-              Indica si cada subsistema está dentro de su ventana horaria activa.
+              Whether each subsystem is currently inside its active time window.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <StatusPill
-                label="Punto de Acceso (AP)"
+                label="Access Point (AP)"
                 active={latest.ap_active}
                 icon={<Wifi className="h-4 w-4" />}
               />
               <StatusPill
-                label="LED Atractor"
+                label="Attractor LED"
                 active={latest.led_active}
                 icon={<Lightbulb className="h-4 w-4" />}
               />
               <StatusPill
-                label="Ventilador"
+                label="Fan"
                 active={latest.fan_active}
                 icon={<Wind className="h-4 w-4" />}
               />
               <StatusPill
-                label="Logging SD"
+                label="SD Logging"
                 active={latest.sd_active}
                 icon={<HardDrive className="h-4 w-4" />}
               />
             </div>
           </div>
 
-          {/* Histórico */}
+          {/* History */}
           {history.length > 1 && (
             <div className="mt-12">
-              <h3 className="text-lg font-semibold text-white">Histórico reciente</h3>
+              <h3 className="text-lg font-semibold text-white">
+                Recent history
+              </h3>
               <p className="mt-1 text-sm text-slate-400">
-                Últimas {history.length} mediciones.
+                Last {history.length} measurements.
               </p>
               <HistoryChart data={history} />
             </div>

@@ -20,7 +20,7 @@ type Measurement = {
 
 function formatTime(ts: string) {
   const d = new Date(ts);
-  return d.toLocaleTimeString("es-CO", {
+  return d.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -73,7 +73,7 @@ export default function HistoryChart({ data }: { data: Measurement[] }) {
               yAxisId="left"
               type="monotone"
               dataKey="temp"
-              name="Temperatura (°C)"
+              name="Temperature (°C)"
               stroke="#fbbf24"
               strokeWidth={2}
               dot={false}
@@ -82,7 +82,7 @@ export default function HistoryChart({ data }: { data: Measurement[] }) {
               yAxisId="right"
               type="monotone"
               dataKey="pres"
-              name="Presión (hPa)"
+              name="Pressure (hPa)"
               stroke="#818cf8"
               strokeWidth={2}
               dot={false}
@@ -91,7 +91,7 @@ export default function HistoryChart({ data }: { data: Measurement[] }) {
               yAxisId="left"
               type="monotone"
               dataKey="alt"
-              name="Altitud (m)"
+              name="Altitude (m)"
               stroke="#34d399"
               strokeWidth={2}
               dot={false}

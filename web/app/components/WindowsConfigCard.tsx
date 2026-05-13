@@ -18,10 +18,10 @@ async function getConfig(deviceId: string): Promise<WindowsConfig | null> {
 }
 
 const windows = [
-  { key: "led", title: "LED Atractor", icon: Lightbulb, color: "text-amber-300" },
-  { key: "ap",  title: "Punto de Acceso", icon: Wifi, color: "text-indigo-300" },
-  { key: "fan", title: "Ventilador", icon: Wind, color: "text-emerald-300" },
-  { key: "sd",  title: "Almacenamiento SD", icon: HardDrive, color: "text-violet-300" },
+  { key: "led", title: "Attractor LED", icon: Lightbulb, color: "text-amber-300" },
+  { key: "ap",  title: "Access Point",  icon: Wifi,      color: "text-indigo-300" },
+  { key: "fan", title: "Fan",           icon: Wind,      color: "text-emerald-300" },
+  { key: "sd",  title: "SD Storage",    icon: HardDrive, color: "text-violet-300" },
 ] as const;
 
 export default async function WindowsConfigCard({
@@ -34,7 +34,8 @@ export default async function WindowsConfigCard({
   if (!cfg) {
     return (
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
-        Sin configuración registrada para <code className="text-emerald-300">{deviceId}</code>.
+        No configuration registered for{" "}
+        <code className="text-emerald-300">{deviceId}</code>.
       </div>
     );
   }
@@ -64,9 +65,7 @@ export default async function WindowsConfigCard({
                 {pad(eh)}:{pad(em)}
               </div>
             </div>
-            <div className="mt-2 text-xs text-slate-500">
-              Inicio → Fin
-            </div>
+            <div className="mt-2 text-xs text-slate-500">Start → End</div>
           </div>
         );
       })}
@@ -75,18 +74,20 @@ export default async function WindowsConfigCard({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-400">
-              Tiempo de ventilador
+              Fan duration
             </div>
             <div className="mt-1 text-2xl font-semibold text-white">
-              {cfg.fan_dur} <span className="text-base font-normal text-slate-400">min</span>
+              {cfg.fan_dur}{" "}
+              <span className="text-base font-normal text-slate-400">min</span>
             </div>
           </div>
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-400">
-              Umbral de detección
+              Detection threshold
             </div>
             <div className="mt-1 text-2xl font-semibold text-white">
-              {cfg.threshold} <span className="text-base font-normal text-slate-400">det.</span>
+              {cfg.threshold}{" "}
+              <span className="text-base font-normal text-slate-400">det.</span>
             </div>
           </div>
         </div>

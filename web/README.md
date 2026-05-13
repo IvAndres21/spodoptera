@@ -1,6 +1,6 @@
 # Spodoptera — Smart Light Trap Web
 
-Dashboard público para la trampa de luz solar IoT (MYOSA + ESP32) que monitorea y controla *Spodoptera frugiperda*.
+Public dashboard for the IoT solar-powered light trap (MYOSA + ESP32) that monitors and controls *Spodoptera frugiperda*.
 
 ## Stack
 
@@ -10,28 +10,28 @@ Dashboard público para la trampa de luz solar IoT (MYOSA + ESP32) que monitorea
 - Neon Postgres (serverless)
 - Recharts + lucide-react
 
-## Desarrollo local
+## Local development
 
 ```bash
 npm install
 cp .env.example .env
-# Edita .env con tu DATABASE_URL de Neon y un DEVICE_KEY
+# Edit .env with your DATABASE_URL from Neon and a DEVICE_KEY
 npm run dev
 ```
 
-## Setup de la base de datos
+## Database setup
 
-1. Crea un proyecto en https://console.neon.tech/.
-2. Copia el `DATABASE_URL` y guárdalo en `.env` (local) y en Vercel (producción).
-3. Ejecuta el schema:
+1. Create a project at https://console.neon.tech/.
+2. Copy the `DATABASE_URL` into `.env` (local) and into Vercel (production).
+3. Run the schema:
 
 ```bash
 psql "$DATABASE_URL" -f lib/schema.sql
 ```
 
-O abre el **SQL Editor** de Neon y pega el contenido de `lib/schema.sql`.
+Or open the Neon **SQL Editor** and paste the contents of `lib/schema.sql`.
 
-## Deploy en Vercel
+## Deploy on Vercel
 
 ```bash
 vercel link
@@ -40,19 +40,19 @@ vercel env add DEVICE_KEY production
 vercel --prod
 ```
 
-El dominio final será `https://spodoptera.vercel.app`.
+The final domain will be `https://spodoptera.vercel.app`.
 
 ## API
 
-| Endpoint                    | Método | Auth        | Descripción                              |
-|-----------------------------|--------|-------------|------------------------------------------|
-| `/api/measurements`         | POST   | `X-Device-Key` | El ESP32 publica una medición           |
-| `/api/measurements?limit=N` | GET    | —           | Histórico para gráficas                  |
-| `/api/latest`               | GET    | —           | Última medición                          |
-| `/api/config`               | GET    | —           | Ventanas configuradas                    |
-| `/api/config`               | POST   | `X-Device-Key` | Actualiza ventanas (sync con ESP32)     |
+| Endpoint                    | Method | Auth           | Description                          |
+|-----------------------------|--------|----------------|--------------------------------------|
+| `/api/measurements`         | POST   | `X-Device-Key` | The ESP32 publishes a measurement    |
+| `/api/measurements?limit=N` | GET    | —              | History for charts                   |
+| `/api/latest`               | GET    | —              | Latest measurement                   |
+| `/api/config`               | GET    | —              | Configured windows                   |
+| `/api/config`               | POST   | `X-Device-Key` | Update windows (sync with ESP32)     |
 
-### Payload esperado en POST /api/measurements
+### Payload expected by POST /api/measurements
 
 ```json
 {

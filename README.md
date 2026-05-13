@@ -1,31 +1,31 @@
 # Spodoptera
 
-Trampa de luz solar IoT para monitoreo y captura del gusano cogollero (*Spodoptera frugiperda*), una plaga clave del maíz.
+IoT solar-powered light trap for monitoring and capturing the fall armyworm (*Spodoptera frugiperda*), a major pest in maize crops.
 
-Proyecto desarrollado para el **MYOSA Contest 2026** por estudiantes de Ingeniería de la **Universidad del Magdalena**.
+Project developed for the **MYOSA Contest 2026** by Engineering students at **Universidad del Magdalena**.
 
-## Repositorio
+## Repository layout
 
 ```
 spodoptera/
 ├── firmware/   # ESP32 (Arduino IDE) — MYOSA Motherboard
 │   ├── MYOSA_TranslateCode.ino
-│   ├── dashboard.html       # UI local servida desde la SD del ESP32
+│   ├── dashboard.html       # Local UI served from the ESP32 SD card
 │   └── style.css
-└── web/        # Dashboard público — Next.js + Tailwind + Neon Postgres
+└── web/        # Public dashboard — Next.js + Tailwind + Neon Postgres
     └── ...
 ```
 
-## Características
+## Features
 
-- **Doble Wi-Fi**: el ESP32 expone un AP local (`MYOSA_BoardServer`) y simultáneamente se conecta como cliente a la red Wi-Fi del usuario.
-- **Modos de almacenamiento configurables desde la UI**: `LOCAL` (SD), `CLOUD` (Vercel) o `BOTH`.
-- **Buffer pendiente**: si el ESP32 está en modo CLOUD/BOTH y se pierde Wi-Fi, los datos se guardan en SD y se sincronizan al reconectar.
-- **Ventanas de operación programables**: AP / LED / Ventilador / Logging SD se activan en horarios independientes.
-- **Deep sleep** entre ventanas, con buffer de cloud que se vacía al despertar.
-- **Dashboard público**: gráficas en tiempo real en https://spodoptera.vercel.app.
+- **Dual Wi-Fi**: the ESP32 exposes a local AP (`MYOSA_BoardServer`) and at the same time joins the user's home Wi-Fi as a client.
+- **Configurable storage modes**: `LOCAL` (SD), `CLOUD` (Vercel) or `BOTH`, selectable from the UI.
+- **Pending buffer**: if the ESP32 is in CLOUD/BOTH mode and Wi-Fi drops, data is staged on SD and synced when the link comes back.
+- **Programmable operating windows**: AP / LED / Fan / SD logging run on independent schedules.
+- **Deep sleep** between windows, with the cloud buffer flushed on wake-up.
+- **Public dashboard** with real-time charts at https://spodoptera.vercel.app.
 
-## Equipo
+## Team
 
 - Rafael Junior Acosta Vargas
 - María de los Ángeles Delgado Villalobos

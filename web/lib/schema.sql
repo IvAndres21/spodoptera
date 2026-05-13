@@ -1,6 +1,6 @@
 -- ============================================================================
---  Spodoptera — schema Postgres (Neon)
---  Ejecutar manualmente vía Neon SQL Editor o `psql $DATABASE_URL -f schema.sql`
+--  Spodoptera — Postgres schema (Neon)
+--  Run manually via Neon SQL Editor or `psql $DATABASE_URL -f schema.sql`
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS measurements (
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS windows_config (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Default config para el primer device
+-- Default config for the first device
 INSERT INTO windows_config (device_id)
 VALUES ('esp32-trap-001')
 ON CONFLICT (device_id) DO NOTHING;

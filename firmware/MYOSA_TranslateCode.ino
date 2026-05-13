@@ -1,6 +1,6 @@
 // ============================================================================
 //  Smart Solar-Powered Light Trap — MYOSA + ESP32
-//  Firmware con doble modo Wi-Fi (AP + STA) y almacenamiento local / cloud.
+//  Firmware with dual Wi-Fi mode (AP + STA) and local / cloud storage.
 // ============================================================================
 
 #include <Wire.h>
@@ -32,7 +32,7 @@ oLed display(SCREEN_WIDTH, SCREEN_HEIGHT);
 RTC_DS1307 rtc;
 
 // ----------------------------------------------------------------------------
-//  Ventanas de operación (NVS-backed)
+//  Operating windows (NVS-backed)
 // ----------------------------------------------------------------------------
 int apStartH = 8,  apStartM = 0;
 int apEndH   = 23, apEndM   = 50;
@@ -62,7 +62,7 @@ const char *pendingFolder = "/Pending";
 const char *pendingFile   = "/Pending/queue.csv";
 
 // ----------------------------------------------------------------------------
-//  Actuadores
+//  Actuators
 // ----------------------------------------------------------------------------
 bool manualFanOverride = false;
 bool manualFanState    = false;
@@ -90,7 +90,7 @@ bool forceAwake = false;
 unsigned long forceAwakeStart = 0;
 
 // ----------------------------------------------------------------------------
-//  Estado global
+//  Global state
 // ----------------------------------------------------------------------------
 struct SystemData {
   float temperature, pressure, altitude;
@@ -119,7 +119,7 @@ unsigned long lastStaCheck = 0;
 const unsigned long staCheckInterval = 30000;
 
 // ----------------------------------------------------------------------------
-//  Modo de almacenamiento
+//  Storage mode
 // ----------------------------------------------------------------------------
 enum StorageMode { STORAGE_LOCAL = 0, STORAGE_CLOUD = 1, STORAGE_BOTH = 2 };
 StorageMode storageMode = STORAGE_LOCAL;
@@ -132,7 +132,7 @@ String deviceKey = "";
 String deviceId  = "esp32-trap-001";
 
 // ----------------------------------------------------------------------------
-//  Prototipos
+//  Prototypes
 // ----------------------------------------------------------------------------
 void getTime();
 void readBMP();
@@ -171,7 +171,7 @@ void handleStorageMode();
 void handleConnState();
 
 // ----------------------------------------------------------------------------
-//  Interrupciones / Deep sleep
+//  Interrupts / Deep sleep
 // ----------------------------------------------------------------------------
 volatile unsigned long lastInterruptTime = 0;
 const unsigned long INTERRUPT_DEBOUNCE = 300;
@@ -194,7 +194,7 @@ void checkDeepSleep() {
 
   if (!activeAP && !activeLED && !activeFan && !activeSD && !anyManual) {
     if (forceAwake && (millis() - forceAwakeStart < 300000)) return;
-    Serial.println("Entrando en modo de ahorro de energia...");
+    Serial.println("Entering deep sleep...");
 
     if (xSemaphoreTake(xI2C_Mutex, pdMS_TO_TICKS(500)) == pdTRUE) {
       digitalWrite(ledPin, LOW);
@@ -222,7 +222,7 @@ void checkDeepSleep() {
       long sleepSeconds = (minWait * 60) - now.second();
       esp_sleep_enable_ext0_wakeup(GPIO_NUM_32, 0);
       esp_sleep_enable_timer_wakeup((uint64_t)sleepSeconds * 1000000ULL);
-      Serial.printf("Durmiendo %ld segundos...\n", sleepSeconds);
+      Serial.printf("Sleeping %ld seconds...\n", sleepSeconds);
       Serial.flush();
       delay(100);
       esp_deep_sleep_start();
@@ -231,7 +231,7 @@ void checkDeepSleep() {
 }
 
 // ----------------------------------------------------------------------------
-//  Tareas FreeRTOS
+//  FreeRTOS tasks
 // ----------------------------------------------------------------------------
 void taskControl(void *pv) {
   for (;;) {
@@ -304,7 +304,7 @@ void taskComm(void *pv) {
 void setup() {
   Serial.begin(115200);
   delay(20);
-  Serial.println("Serial iniciado");
+  Serial.println("Serial started");
 
   preferences.begin("config", false);
 
@@ -351,7 +351,7 @@ void setup() {
   Wire.setClock(100000);
 
   if (!rtc.begin()) {
-    Serial.println("[ERROR] No se encontro el RTC");
+    Serial.println("[ERROR] RTC not found");
     systemData.rtcAvailable = false;
   } else {
     systemData.rtcAvailable = true;
@@ -362,7 +362,7 @@ void setup() {
   if (systemData.rtcAvailable) getTime();
 
   if (!Pr.begin()) {
-    Serial.println("BMP180 no detectado");
+    Serial.println("BMP180 not detected");
     systemData.bmpAvailable = false;
   } else {
     systemData.bmpAvailable = true;
@@ -371,7 +371,7 @@ void setup() {
   SPI.begin();
   delay(10);
   if (!SD.begin(SD_CS)) {
-    Serial.println("[ERROR] No se encontro SD — continuando sin SD");
+    Serial.println("[ERROR] SD not found — continuing without SD");
     systemData.sdAvailable = false;
   } else {
     systemData.sdAvailable = true;
@@ -381,7 +381,7 @@ void setup() {
   if (systemData.sdAvailable) updateFileNames();
 
   if (!display.begin()) {
-    Serial.println("OLED no detectada");
+    Serial.println("OLED not detected");
   } else {
     display.clearDisplay();
     display.setCursor(0, 0);
@@ -426,7 +426,7 @@ void loop() { }
 // ============================================================================
 void startSTA() {
   if (staSsid.length() == 0) return;
-  Serial.printf("Conectando STA a %s...\n", staSsid.c_str());
+  Serial.printf("Connecting STA to %s...\n", staSsid.c_str());
   WiFi.begin(staSsid.c_str(), staPassword.c_str());
 }
 
@@ -444,14 +444,14 @@ void manageSTA() {
   if (WiFi.status() == WL_CONNECTED) {
     if (!staConnected) {
       staConnected = true;
-      Serial.print("STA conectado. IP: ");
+      Serial.print("STA connected. IP: ");
       Serial.println(WiFi.localIP());
       flushPendingBuffer();
     }
   } else {
     if (staConnected) {
       staConnected = false;
-      Serial.println("STA desconectado");
+      Serial.println("STA disconnected");
     }
     if (staSsid.length() > 0) {
       WiFi.begin(staSsid.c_str(), staPassword.c_str());
@@ -480,7 +480,7 @@ bool sendToCloud(const JsonDocument &doc) {
   http.end();
 
   if (code >= 200 && code < 300) return true;
-  Serial.printf("Cloud POST fallo: %d\n", code);
+  Serial.printf("Cloud POST failed: %d\n", code);
   return false;
 }
 
@@ -529,7 +529,7 @@ void flushPendingBuffer() {
   }
   f.close();
   SD.remove(pendingFile);
-  if (flushed > 0) Serial.printf("Flush pendiente: %d filas\n", flushed);
+  if (flushed > 0) Serial.printf("Pending flush: %d rows\n", flushed);
 }
 
 // ============================================================================
@@ -538,7 +538,7 @@ void flushPendingBuffer() {
 void handleRoot() {
   File file = SD.open("/dashboard.html");
   if (!file) {
-    server.send(500, "text/plain", "Error cargando dashboard");
+    server.send(500, "text/plain", "Error loading dashboard");
     return;
   }
   server.streamFile(file, "text/html");
@@ -556,7 +556,7 @@ void handleStatic() {
     server.streamFile(file, contentType);
     file.close();
   } else {
-    server.send(404, "text/plain", "Archivo no encontrado");
+    server.send(404, "text/plain", "File not found");
   }
 }
 
@@ -608,17 +608,17 @@ void handleEstado() {
 
 void handleArchives() {
   if (!server.hasArg("dir")) {
-    server.send(400, "text/plain", "Falta parametro dir");
+    server.send(400, "text/plain", "Missing dir parameter");
     return;
   }
   String directory = "/" + server.arg("dir");
   if (!SD.exists(directory)) {
-    server.send(404, "text/plain", "Directorio no encontrado");
+    server.send(404, "text/plain", "Directory not found");
     return;
   }
   File root = SD.open(directory);
   if (!root || !root.isDirectory()) {
-    server.send(404, "text/plain", "No es un directorio valido");
+    server.send(404, "text/plain", "Not a valid directory");
     return;
   }
   JsonDocument doc;
@@ -638,17 +638,17 @@ void handleArchives() {
 
 void handleDownload() {
   if (!server.hasArg("dir") || !server.hasArg("file")) {
-    server.send(400, "text/plain", "Faltan parametros");
+    server.send(400, "text/plain", "Missing parameters");
     return;
   }
   String path = "/" + server.arg("dir") + "/" + server.arg("file");
   if (!SD.exists(path)) {
-    server.send(404, "text/plain", "Archivo no encontrado");
+    server.send(404, "text/plain", "File not found");
     return;
   }
   File file = SD.open(path);
   if (!file) {
-    server.send(500, "text/plain", "Error abriendo archivo");
+    server.send(500, "text/plain", "Error opening file");
     return;
   }
   server.sendHeader("Content-Disposition",
@@ -809,7 +809,7 @@ void handleConnState() {
 }
 
 // ============================================================================
-//  Ventanas de operación
+//  Operating windows
 // ============================================================================
 bool isInsideWindow(int sH, int sM, int eH, int eM) {
   int current = systemData.hour * 60 + systemData.minute;
@@ -942,7 +942,7 @@ void logBMP() {
     if (!SD.exists(filenameBMP)) {
       File f = SD.open(filenameBMP, FILE_WRITE);
       if (f) {
-        f.println("Fecha,Hora,Temp,Pres,Alt,LED,Fan");
+        f.println("Date,Time,Temp,Pres,Alt,LED,Fan");
         f.close();
       }
     }
@@ -996,9 +996,9 @@ void showData() {
   display.setCursor(0, 0);
 
   if (currentMode == MODE_BMP) {
-    display.printf("Fecha: %02d/%02d/%04d\n",
+    display.printf("Date: %02d/%02d/%04d\n",
                    systemData.day, systemData.month, systemData.year);
-    display.printf("Hora : %02d:%02d\n", systemData.hour, systemData.minute);
+    display.printf("Time: %02d:%02d\n", systemData.hour, systemData.minute);
     display.println();
     display.printf("Temp: %.1f C\n", systemData.temperature);
     display.printf("Pres: %.1f kPa\n", systemData.pressure);
@@ -1006,20 +1006,20 @@ void showData() {
     display.printf("LED : %s\n", systemData.ledState  ? "ON" : "OFF");
     display.printf("Fan : %s\n", systemData.loadState ? "ON" : "OFF");
   } else if (currentMode == MODE_OPERATING_WINDOWS) {
-    display.println("Ventanas Activas:");
+    display.println("Active Windows:");
     display.println("--------------------");
     display.printf("WiFi AP: %s\n",
-                   (operatingWindow_AP() || forceAwake) ? "ACTIVA" : "INACTIVA");
-    display.printf("LEDs   : %s\n", operatingWindow_LED() ? "ACTIVA" : "INACTIVA");
-    display.printf("Log SD : %s\n", operatingWindow_SD()  ? "ACTIVA" : "INACTIVA");
-    display.printf("Fan    : %s\n", operatingWindow_Fan() ? "ACTIVA" : "INACTIVA");
+                   (operatingWindow_AP() || forceAwake) ? "ACTIVE" : "INACTIVE");
+    display.printf("LEDs   : %s\n", operatingWindow_LED() ? "ACTIVE" : "INACTIVE");
+    display.printf("SD Log : %s\n", operatingWindow_SD()  ? "ACTIVE" : "INACTIVE");
+    display.printf("Fan    : %s\n", operatingWindow_Fan() ? "ACTIVE" : "INACTIVE");
     display.println();
     if (staConnected) {
       display.printf("STA: %s\n", WiFi.localIP().toString().c_str());
     } else if (staEnabled) {
-      display.println("STA: conectando...");
+      display.println("STA: connecting...");
     } else {
-      display.println("STA: deshabilitado");
+      display.println("STA: disabled");
     }
   }
   display.display();

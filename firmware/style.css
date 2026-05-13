@@ -1,5 +1,5 @@
 /* ========================================
-   PALETA DE COLORES Y VARIABLES
+   COLOR PALETTE AND VARIABLES
    ======================================== */
 :root {
     --primary: #5B6FE8;
@@ -27,7 +27,7 @@
 }
 
 /* ========================================
-   RESET Y ESTILOS BASE
+   RESET AND BASE STYLES
    ======================================== */
 * {
     margin: 0;
@@ -49,7 +49,7 @@ body {
 }
 
 /* ========================================
-   CONTENEDOR PRINCIPAL
+   MAIN CONTAINER
    ======================================== */
 .container {
     max-width: 1200px;
@@ -192,7 +192,7 @@ h3 {
 
 
 /* ========================================
-   DATOS EN TIEMPO REAL
+   REAL-TIME DATA
    ======================================== */
 .realtime-grid {
     display: grid;
@@ -304,7 +304,7 @@ h3 {
     font-weight: 600;
 }
 
-/* Grid de valores INA compacto */
+/* Compact metrics grid */
 .realtime-values-compact {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -354,7 +354,7 @@ h3 {
 }
 
 /* ========================================
-   CONTROL DE CARGAS
+   LOAD CONTROL
    ======================================== */
 .control-grid {
     display: grid;
@@ -480,7 +480,7 @@ h3 {
 }
 
 /* ========================================
-   BADGES E INDICADORES
+   BADGES AND INDICATORS
    ======================================== */
 .badge {
     padding: 6px 14px;
@@ -569,7 +569,7 @@ h3 {
 }
 
 /* ========================================
-   CONTROLES Y CAMPOS DE ENTRADA
+   CONTROLS AND INPUT FIELDS
    ======================================== */
 .control-section {
     background: var(--surface-secondary);
@@ -699,7 +699,7 @@ input[type="range"]::-moz-range-progress {
 }
 
 /* ========================================
-   BOTONES GENERALES
+   GENERAL BUTTONS
    ======================================== */
 button {
     background: var(--primary);
@@ -735,7 +735,7 @@ button:disabled {
 }
 
 /* ========================================
-   GRÁFICOS Y CHARTS
+   GRAPHS AND CHARTS
    ======================================== */
 .chart-container {
     position: relative;
@@ -786,7 +786,7 @@ button:disabled {
 }
 
 /* ========================================
-   VENTANAS DE TIEMPO
+   TIME WINDOWS
    ======================================== */
 .windows-grid {
     display: grid;
@@ -865,7 +865,7 @@ button:disabled {
 }
 
 /* ========================================
-   BOTÓN GUARDAR
+   SAVE BUTTON
    ======================================== */
 .save-btn-wrapper {
     display: flex;
@@ -878,7 +878,7 @@ button:disabled {
 }
 
 /* ========================================
-   CONTROLES Y OPCIONES DE GRÁFICAS
+   CHART CONTROLS AND OPTIONS
    ======================================== */
 .chart-controls {
     margin-bottom: 20px;
@@ -1037,7 +1037,7 @@ button:disabled {
 }
 
 /* ========================================
-   MODO MANUAL
+   MANUAL MODE
    ======================================== */
 .manual-indicator {
     padding: 18px 24px;
@@ -1131,7 +1131,7 @@ button:disabled {
 }
 
 /* ========================================
-   PARÁMETROS (sliders + chips)
+   PARAMETERS (sliders + chips)
    ======================================== */
 .param-label {
     display: flex;
@@ -1163,7 +1163,7 @@ button:disabled {
 }
 
 /* ========================================
-   BOTÓN SECUNDARIO
+   SECONDARY BUTTON
    ======================================== */
 .btn-secondary {
     background: var(--surface);
@@ -1178,7 +1178,7 @@ button:disabled {
 }
 
 /* ========================================
-   SUBTÍTULOS DE CARDS
+   CARD SUBTITLES
    ======================================== */
 .card-subtitle {
     color: var(--text-secondary);
@@ -1197,7 +1197,7 @@ button:disabled {
 }
 
 /* ========================================
-   PESTAÑA CONECTIVIDAD
+   CONNECTIVITY TAB
    ======================================== */
 .conn-info {
     margin-top: 16px;
@@ -1422,7 +1422,7 @@ button:disabled {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    /* --- Ajustes para gráficas en móvil --- */
+    /* --- Mobile chart adjustments --- */
     .chart-container {
         height: 300px;
         padding: 16px;

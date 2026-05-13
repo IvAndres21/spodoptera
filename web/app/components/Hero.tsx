@@ -17,15 +17,15 @@ export default function Hero() {
             Spodoptera
           </span>
           <span className="block text-2xl font-medium text-slate-300 sm:text-3xl mt-2">
-            Trampa de luz solar IoT para control de plagas
+            Solar-powered IoT light trap for pest control
           </span>
         </h1>
 
         <p className="mt-6 max-w-2xl text-base text-slate-300 sm:text-lg leading-relaxed">
-          Una trampa inteligente que combina luz UV-A, sensores ambientales y energía solar
-          para monitorear y capturar el gusano cogollero (<em>Spodoptera frugiperda</em>),
-          una plaga clave del maíz. Los datos se sincronizan en tiempo real desde el campo
-          al dashboard que estás viendo.
+          A smart trap that combines UV-A light, environmental sensors and solar energy
+          to monitor and capture the fall armyworm (<em>Spodoptera frugiperda</em>),
+          a major pest in maize crops. Data is synchronized in real time from the field
+          to the dashboard you are looking at.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3 text-sm text-slate-300">
@@ -33,7 +33,7 @@ export default function Hero() {
             href="#dashboard"
             className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 font-semibold text-emerald-950 transition hover:bg-emerald-400"
           >
-            Ver dashboard
+            View dashboard
           </a>
           <a
             href="https://blog.myosa-sensors.org/"

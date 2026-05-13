@@ -15,19 +15,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Spodoptera — Smart Light Trap",
   description:
-    "Trampa de luz solar inteligente para monitoreo y control de Spodoptera frugiperda en cultivos de maíz. Plataforma IoT con MYOSA + ESP32.",
+    "Smart solar-powered light trap for monitoring and controlling Spodoptera frugiperda in maize crops. IoT platform powered by MYOSA + ESP32.",
   keywords: [
     "Spodoptera frugiperda",
-    "trampa de luz",
+    "light trap",
     "IoT",
     "MYOSA",
-    "agricultura sostenible",
+    "sustainable agriculture",
     "Unimagdalena",
   ],
   openGraph: {
     title: "Spodoptera — Smart Light Trap",
     description:
-      "Monitoreo en tiempo real de una trampa de luz solar IoT para control de plagas agrícolas.",
+      "Real-time monitoring of an IoT solar-powered light trap for agricultural pest control.",
     type: "website",
   },
 };
@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">

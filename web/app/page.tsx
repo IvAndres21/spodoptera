@@ -13,10 +13,10 @@ export default function Home() {
 
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <h2 className="text-2xl font-bold text-white sm:text-3xl">
-          Ventanas de operación configuradas
+          Configured operating windows
         </h2>
         <p className="mt-1 text-sm text-slate-400 mb-6">
-          Horarios programados en la trampa para activar cada subsistema.
+          Schedules programmed on the trap for each subsystem.
         </p>
         <WindowsConfigCard deviceId="esp32-trap-001" />
       </section>
