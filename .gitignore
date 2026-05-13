@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# next.js
+web/.next/
+web/out/
+web/build/
+web/.turbo/
+
+# env
+.env
+.env*.local
+web/.env
+web/.env*.local
+
+# vercel
+.vercel
+web/.vercel
+
+# misc
+.DS_Store
+*.pem
+*.log
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# arduino
+firmware/build/
+firmware/*.bin

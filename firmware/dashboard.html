@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LightTrap Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🌿 LightTrap Dashboard</h1>
+            <div class="status">✓ Sistema Activo</div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event,'dashboard')">Dashboard</button>
+            <button class="tab-button" onclick="openTab(event,'config')">Configuración</button>
+            <button class="tab-button" onclick="openTab(event,'conectividad')">Conectividad</button>
+        </div>
+
+        <!-- ============== DASHBOARD ============== -->
+        <div id="dashboard" class="tab-content active">
+            <div class="monitoring-section">
+                <h2>Datos en Tiempo Real</h2>
+                <div class="realtime-grid">
+                    <div class="realtime-card">
+                        <span class="label">Fecha</span>
+                        <span id="dateValue">---</span>
+                    </div>
+                    <div class="realtime-card">
+                        <span class="label">Hora</span>
+                        <span id="timeValue">---</span>
+                    </div>
+                </div>
+
+                <div class="realtime-values">
+                    <div class="value-card">
+                        <div class="value-icon">🌡️</div>
+                        <div class="value-label">Temperatura</div>
+                        <div class="value-display" id="tempValue">--</div>
+                        <div class="value-unit">°C</div>
+                    </div>
+                    <div class="value-card">
+                        <div class="value-icon">📊</div>
+                        <div class="value-label">Presión</div>
+                        <div class="value-display" id="presValue">--</div>
+                        <div class="value-unit">hPa</div>
+                    </div>
+                    <div class="value-card">
+                        <div class="value-icon">📈</div>
+                        <div class="value-label">Altitud</div>
+                        <div class="value-display" id="altValue">--</div>
+                        <div class="value-unit">m</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Control de Cargas</h2>
+                <div class="control-grid">
+                    <div class="control-card led-card">
+                        <div>
+                            <div class="control-card-title">💡 Luz Atractora</div>
+                            <div class="control-card-subtitle">LED UV-A</div>
+                        </div>
+                        <span id="led-state" class="badge badge-off">OFF</span>
+                    </div>
+
+                    <div class="control-card">
+                        <div class="control-card-header">
+                            <div class="control-card-title">💨 Ventilador</div>
+                            <span id="fan-state" class="badge badge-off">OFF</span>
+                        </div>
+                        <div class="area-display">
+                            <div class="area-label">Detecciones</div>
+                            <div class="area-count" id="areaCount">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="monitoring-section">
+                <h2>Historial de Datos</h2>
+
+                <div class="control-section">
+                    <div class="control-grid">
+                        <div class="info-group">
+                            <label for="subdir">Mes</label>
+                            <select id="subdir" onchange="cargarArchivosMes()">
+                                <option value="">Seleccionar mes...</option>
+                            </select>
+                        </div>
+                        <div class="info-group">
+                            <label for="archivo">Archivo</label>
+                            <select id="archivo">
+                                <option value="">Seleccionar archivo...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="tab-buttons" onclick="cargarDatos()">📊 Cargar Gráfica</button>
+                        <button class="tab-buttons" onclick="descargarArchivo()">⬇️ Descargar CSV</button>
+                    </div>
+                </div>
+
+                <div id="messageContainer"></div>
+
+                <div class="chart-controls" id="chartControls" style="display: none;">
+                    <div class="chart-options">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="showTemp" checked onchange="actualizarGrafica()">
+                            <label for="showTemp">Temperatura</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="showPres" checked onchange="actualizarGrafica()">
+                            <label for="showPres">Presión</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="showAlt" onchange="actualizarGrafica()">
+                            <label for="showAlt">Altitud</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chartsContainer" style="display: none;">
+                    <div class="chart-container">
+                        <canvas id="myChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="button-group" id="downloadGroup" style="display: none; margin-top: 20px;">
+                    <button onclick="descargarGraficaActual()">📥 Descargar Gráfica</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============== CONFIGURACIÓN ============== -->
+        <div id="config" class="tab-content">
+            <div class="card">
+                <div class="manual-indicator" id="manualIndicator">
+                    MODO AUTOMÁTICO
+                </div>
+                <button class="exit-manual-btn" onclick="clearManualMode()">
+                    Salir del Modo Manual
+                </button>
+
+                <div class="control-item">
+                    <span>LED</span>
+                    <button id="btn-led" class="toggle-btn off" onclick="toggleLED()">OFF</button>
+                </div>
+                <div class="control-item">
+                    <span>Ventilador</span>
+                    <button id="btn-fan" class="toggle-btn off" onclick="toggleFan()">OFF</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Parámetros de Captura</h3>
+                <div class="info-group">
+                    <label class="param-label">
+                        <span>Tiempo Ventilador:</span>
+                        <span class="param-chip" id="valFan">--</span>
+                    </label>
+                    <input type="range" id="fanDurInput" min="1" max="10" step="1"
+                        oninput="document.getElementById('valFan').textContent = this.value + ' min'">
+                    <div class="range-hints"><span>1 min</span><span>10 min</span></div>
+                </div>
+
+                <div class="info-group" style="margin-top: 24px;">
+                    <label class="param-label">
+                        <span>Umbral de Insectos:</span>
+                        <span class="param-chip" id="valThres">--</span>
+                    </label>
+                    <input type="range" id="thresholdInput" min="1" max="30" step="1"
+                        oninput="document.getElementById('valThres').textContent = this.value + ' det.'">
+                    <div class="range-hints"><span>1 det.</span><span>30 det.</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Estado de Ventanas</h3>
+                <div class="status-item">
+                    <span>📡 AP</span>
+                    <div id="apStatus" class="status-indicator off">INACTIVO</div>
+                </div>
+                <div class="status-item">
+                    <span>💡 LED Operación</span>
+                    <div id="ledStatusIndicator" class="status-indicator off">INACTIVO</div>
+                </div>
+                <div class="status-item">
+                    <span>💨 Ventilador</span>
+                    <div id="fanStatus" class="status-indicator off">INACTIVO</div>
+                </div>
+                <div class="status-item">
+                    <span>💾 SD Logging</span>
+                    <div id="sdStatus" class="status-indicator off">INACTIVO</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Configurar Ventanas de Operación</h3>
+                <div class="windows-grid">
+                    <div class="window-card">
+                        <div class="window-card-header">
+                            <span class="window-card-icon">💡</span>
+                            <span>LED Atractor</span>
+                        </div>
+                        <div class="time-inputs">
+                            <input type="time" id="ledStart">
+                            <span class="time-separator">→</span>
+                            <input type="time" id="ledEnd">
+                        </div>
+                    </div>
+
+                    <div class="window-card">
+                        <div class="window-card-header">
+                            <span class="window-card-icon">📡</span>
+                            <span>Punto de Acceso</span>
+                        </div>
+                        <div class="time-inputs">
+                            <input type="time" id="apStart">
+                            <span class="time-separator">→</span>
+                            <input type="time" id="apEnd">
+                        </div>
+                    </div>
+
+                    <div class="window-card">
+                        <div class="window-card-header">
+                            <span class="window-card-icon">💨</span>
+                            <span>Ventilador</span>
+                        </div>
+                        <div class="time-inputs">
+                            <input type="time" id="fanStart">
+                            <span class="time-separator">→</span>
+                            <input type="time" id="fanEnd">
+                        </div>
+                    </div>
+
+                    <div class="window-card">
+                        <div class="window-card-header">
+                            <span class="window-card-icon">💾</span>
+                            <span>Almacenamiento SD</span>
+                        </div>
+                        <div class="time-inputs">
+                            <input type="time" id="sdStart">
+                            <span class="time-separator">→</span>
+                            <input type="time" id="sdEnd">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="save-btn-wrapper">
+                <button onclick="saveWindows()">💾 Guardar cambios</button>
+            </div>
+        </div>
+
+        <!-- ============== CONECTIVIDAD ============== -->
+        <div id="conectividad" class="tab-content">
+            <div class="card">
+                <h3>Estado de conexión</h3>
+                <div class="status-item">
+                    <span>📶 STA (Cliente Wi-Fi)</span>
+                    <div id="staIndicator" class="status-indicator off">DESCONECTADO</div>
+                </div>
+                <div class="conn-info">
+                    <div><strong>Red:</strong> <span id="staSsidLabel">—</span></div>
+                    <div><strong>IP local:</strong> <span id="staIpLabel">—</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Configurar Wi-Fi del router</h3>
+                <p class="card-subtitle">
+                    El equipo se conectará a tu red Wi-Fi para enviar datos a la nube,
+                    sin perder el AP local (<code>MYOSA_BoardServer</code>).
+                </p>
+                <div class="info-group">
+                    <label for="wifiSsid">SSID</label>
+                    <input type="text" id="wifiSsid" placeholder="Nombre de la red Wi-Fi">
+                </div>
+                <div class="info-group">
+                    <label for="wifiPass">Contraseña</label>
+                    <input type="password" id="wifiPass" placeholder="••••••••">
+                </div>
+                <div class="button-group">
+                    <button onclick="saveWifi()">💾 Guardar y conectar</button>
+                    <button class="btn-secondary" onclick="clearWifi()">Olvidar red</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Modo de almacenamiento</h3>
+                <p class="card-subtitle">
+                    Decide dónde se guardan las mediciones de la trampa.
+                </p>
+                <div class="storage-options">
+                    <label class="storage-option">
+                        <input type="radio" name="storage" value="LOCAL">
+                        <div>
+                            <div class="storage-title">📁 Local</div>
+                            <div class="storage-desc">Solo en la SD del equipo</div>
+                        </div>
+                    </label>
+                    <label class="storage-option">
+                        <input type="radio" name="storage" value="CLOUD">
+                        <div>
+                            <div class="storage-title">☁️ Nube</div>
+                            <div class="storage-desc">Solo enviar a spodoptera.vercel.app</div>
+                        </div>
+                    </label>
+                    <label class="storage-option">
+                        <input type="radio" name="storage" value="BOTH">
+                        <div>
+                            <div class="storage-title">🔁 Ambos</div>
+                            <div class="storage-desc">SD + Nube (recomendado)</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="info-group" style="margin-top: 20px;">
+                    <label for="deviceId">ID del dispositivo</label>
+                    <input type="text" id="deviceId" placeholder="esp32-trap-001">
+                </div>
+                <div class="info-group">
+                    <label for="deviceKey">Clave del dispositivo (X-Device-Key)</label>
+                    <input type="password" id="deviceKey" placeholder="Clave compartida con el backend">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="saveStorageMode()">💾 Guardar modo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/chart.js"></script>
+    <script>
+        let lastKnownHour = 0;
+        let lastKnownMinute = 0;
+        let chart = null;
+        let currentData = null;
+
+        function openTab(event, tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function mostrarMensaje(texto, tipo = 'success') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="info-message ${tipo}">${texto}</div>`;
+            setTimeout(() => { container.innerHTML = ''; }, 5000);
+        }
+
+        async function clearManualMode() {
+            await fetch("/clearManual", { method: "POST" });
+        }
+
+        async function toggleFan() {
+            const button = document.getElementById("btn-fan");
+            const newState = !button.classList.contains("on");
+            await fetch("/control", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ state: newState })
+            });
+            updateToggleButton(button, newState);
+        }
+
+        async function toggleLED() {
+            const button = document.getElementById("btn-led");
+            const newState = !button.classList.contains("on");
+            await fetch("/control", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ led: newState })
+            });
+            updateToggleButton(button, newState);
+        }
+
+        function updateToggleButton(button, state) {
+            button.classList.toggle("on", state);
+            button.classList.toggle("off", !state);
+            button.textContent = state ? "ON" : "OFF";
+        }
+
+        function updateBadge(el, state) {
+            el.classList.toggle("badge-on", state);
+            el.classList.toggle("badge-off", !state);
+            el.textContent = state ? "ON" : "OFF";
+        }
+
+        function updateStatus(elementId, isActive) {
+            const el = document.getElementById(elementId);
+            el.classList.toggle("on", isActive);
+            el.classList.toggle("off", !isActive);
+            el.textContent = isActive ? "ACTIVO" : "INACTIVO";
+        }
+
+        function formatTime(h, m) {
+            return String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
+        }
+
+        async function actualizarDatos() {
+            try {
+                const r = await fetch('/estado');
+                const data = await r.json();
+
+                document.getElementById('tempValue').textContent = parseFloat(data.temp).toFixed(2);
+                document.getElementById('presValue').textContent = parseFloat(data.pres).toFixed(2);
+                document.getElementById('altValue').textContent = parseFloat(data.alt).toFixed(2);
+
+                let fecha = '--', hora = '--';
+                if (data.timestamp) {
+                    const partes = data.timestamp.split(/[T ]/);
+                    if (partes.length >= 2) {
+                        fecha = partes[0];
+                        hora = partes[1];
+                        const tp = hora.split(':');
+                        if (tp.length >= 2) {
+                            lastKnownHour = parseInt(tp[0]);
+                            lastKnownMinute = parseInt(tp[1]);
+                        }
+                    } else { fecha = data.timestamp; }
+                }
+                document.getElementById('dateValue').textContent = fecha;
+                document.getElementById('timeValue').textContent = hora;
+
+                updateBadge(document.getElementById('led-state'), data.led);
+                updateBadge(document.getElementById('fan-state'), data.fan);
+                document.getElementById('areaCount').textContent = data.areaCount ?? 0;
+
+                const manualActive = !!data.manualLed || !!data.manualFan;
+                const indicator = document.getElementById("manualIndicator");
+                indicator.textContent = manualActive ? "MODO MANUAL ACTIVO" : "MODO AUTOMÁTICO";
+                indicator.classList.toggle("active", manualActive);
+
+                updateToggleButton(document.getElementById("btn-led"), data.led);
+                updateToggleButton(document.getElementById("btn-fan"), data.fan);
+
+                const settingsTab = document.getElementById("config");
+                if (settingsTab && !settingsTab.classList.contains("active")) {
+                    document.getElementById("fanDurInput").value = data.fanDur;
+                    document.getElementById("valFan").textContent = data.fanDur + ' min';
+                    document.getElementById("thresholdInput").value = data.threshold;
+                    document.getElementById("valThres").textContent = data.threshold + ' det.';
+
+                    document.getElementById("ledStart").value = formatTime(data.ledSH, data.ledSM);
+                    document.getElementById("ledEnd").value = formatTime(data.ledEH, data.ledEM);
+                    document.getElementById("sdStart").value = formatTime(data.sdSH, data.sdSM);
+                    document.getElementById("sdEnd").value = formatTime(data.sdEH, data.sdEM);
+                    document.getElementById("apStart").value = formatTime(data.apSH, data.apSM);
+                    document.getElementById("apEnd").value = formatTime(data.apEH, data.apEM);
+                    document.getElementById("fanStart").value = formatTime(data.fanSH, data.fanSM);
+                    document.getElementById("fanEnd").value = formatTime(data.fanEH, data.fanEM);
+                }
+
+                updateStatus("apStatus", data.apActive);
+                updateStatus("ledStatusIndicator", data.ledActive);
+                updateStatus("fanStatus", data.fanActive);
+                updateStatus("sdStatus", data.sdActive);
+
+                const staInd = document.getElementById('staIndicator');
+                if (staInd) {
+                    staInd.classList.toggle('on', !!data.staConnected);
+                    staInd.classList.toggle('off', !data.staConnected);
+                    staInd.textContent = data.staConnected
+                        ? 'CONECTADO'
+                        : (data.staEnabled ? 'CONECTANDO...' : 'DESHABILITADO');
+                    document.getElementById('staSsidLabel').textContent = data.staSsid || '—';
+                    document.getElementById('staIpLabel').textContent = data.staIp || '—';
+
+                    const conectividadTab = document.getElementById('conectividad');
+                    if (conectividadTab && !conectividadTab.classList.contains('active')) {
+                        const modeMap = { 0: 'LOCAL', 1: 'CLOUD', 2: 'BOTH' };
+                        const cur = modeMap[data.storageMode] || 'LOCAL';
+                        const radio = document.querySelector(`input[name="storage"][value="${cur}"]`);
+                        if (radio) radio.checked = true;
+                        if (data.staSsid && !document.getElementById('wifiSsid').value) {
+                            document.getElementById('wifiSsid').value = data.staSsid;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error al actualizar datos:', error);
+            }
+        }
+
+        async function cargarArchivosMes() {
+            const subdir = document.getElementById('subdir').value;
+            if (!subdir) return;
+            try {
+                const r = await fetch(`/archivos?dir=Data/${subdir}`);
+                const items = await r.json();
+                const sel = document.getElementById('archivo');
+                sel.innerHTML = '<option value="">Seleccionar archivo...</option>';
+                items.forEach(it => {
+                    if (it.type === "file") {
+                        const o = document.createElement('option');
+                        o.value = it.name; o.textContent = it.name;
+                        sel.appendChild(o);
+                    }
+                });
+            } catch (e) { mostrarMensaje("Error cargando archivos", "error"); }
+        }
+
+        async function cargarMeses() {
+            try {
+                const r = await fetch(`/archivos?dir=Data`);
+                const items = await r.json();
+                const sel = document.getElementById('subdir');
+                sel.innerHTML = '<option value="">Seleccionar mes...</option>';
+                items.forEach(it => {
+                    if (it.type === "dir") {
+                        const o = document.createElement('option');
+                        o.value = it.name; o.textContent = it.name;
+                        sel.appendChild(o);
+                    }
+                });
+            } catch (e) { /* SD aún no lista */ }
+        }
+
+        async function cargarDatos() {
+            const subdir = document.getElementById('subdir').value;
+            const archivo = document.getElementById('archivo').value;
+            if (!subdir || !archivo) {
+                mostrarMensaje("Selecciona mes y archivo", "error"); return;
+            }
+            try {
+                const url = `/descargar?dir=Data/${subdir}&file=${archivo}`;
+                const response = await fetch(url);
+                const text = await response.text();
+                document.getElementById('chartsContainer').style.display = 'block';
+                document.getElementById('chartControls').style.display = 'block';
+                document.getElementById('downloadGroup').style.display = 'flex';
+                parseAndChart(text);
+                mostrarMensaje("Datos cargados");
+            } catch (e) { mostrarMensaje("Error cargando archivo", "error"); }
+        }
+
+        function parseAndChart(csv) {
+            const filas = csv.trim().split('\n');
+            if (filas.length < 2) return;
+            const datos = { labels: [], temp: [], pres: [], alt: [] };
+            for (let i = 1; i < filas.length; i++) {
+                const col = filas[i].split(',');
+                if (col.length < 5) continue;
+                datos.labels.push(col[1].trim());
+                datos.temp.push(parseFloat(col[2]));
+                datos.pres.push(parseFloat(col[3]));
+                datos.alt.push(parseFloat(col[4]));
+            }
+            currentData = datos;
+            graficar(datos);
+        }
+
+        function graficar(data) {
+            const datasets = [];
+            const ctx = document.getElementById('myChart').getContext('2d');
+
+            if (document.getElementById('showTemp').checked) {
+                datasets.push({
+                    label: 'Temperatura (°C)', data: data.temp,
+                    borderColor: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.1)',
+                    borderWidth: 2, tension: 0.3
+                });
+            }
+            if (document.getElementById('showPres').checked) {
+                datasets.push({
+                    label: 'Presión (hPa)', data: data.pres,
+                    borderColor: '#5B6FE8', backgroundColor: 'rgba(91,111,232,0.1)',
+                    borderWidth: 2, tension: 0.3
+                });
+            }
+            if (document.getElementById('showAlt').checked) {
+                datasets.push({
+                    label: 'Altitud (m)', data: data.alt,
+                    borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)',
+                    borderWidth: 2, tension: 0.3
+                });
+            }
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: data.labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        function actualizarGrafica() { if (currentData) graficar(currentData); }
+
+        function descargarArchivo() {
+            const subdir = document.getElementById('subdir').value;
+            const archivo = document.getElementById('archivo').value;
+            if (!subdir || !archivo) { mostrarMensaje("Selecciona mes y archivo", "error"); return; }
+            const link = document.createElement('a');
+            link.href = `/descargar?dir=Data/${subdir}&file=${archivo}`;
+            link.download = archivo;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function descargarGraficaActual() {
+            const archivo = document.getElementById('archivo').value;
+            const canvas = document.getElementById('myChart');
+            if (!chart) { mostrarMensaje("Primero carga un archivo", "error"); return; }
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `grafica_${archivo.replace('.csv', '.png')}`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        async function saveWindows() {
+            const split = (id) => {
+                const v = document.getElementById(id).value;
+                const [h, m] = v.split(':').map(Number);
+                return { h, m };
+            };
+
+            const fanDur = parseInt(document.getElementById("fanDurInput").value);
+            const threshold = parseInt(document.getElementById("thresholdInput").value);
+            if (fanDur > 10 || fanDur < 1) { alert("Tiempo del ventilador: 1–10 min."); return; }
+            if (threshold > 30 || threshold < 1) { alert("Umbral: 1–30 detecciones."); return; }
+
+            const apS = split("apStart"), apE = split("apEnd");
+            const startVal = apS.h * 60 + apS.m;
+            const endVal = apE.h * 60 + apE.m;
+            const nowVal = lastKnownHour * 60 + lastKnownMinute;
+            const isInside = (startVal <= endVal)
+                ? (nowVal >= startVal && nowVal <= endVal)
+                : (nowVal >= startVal || nowVal <= endVal);
+            if (!isInside && !confirm("⚠️ La hora actual queda fuera de la ventana AP. Se perderá Wi-Fi del AP al guardar. ¿Continuar?")) return;
+
+            const ledS = split("ledStart"), ledE = split("ledEnd");
+            const fanS = split("fanStart"), fanE = split("fanEnd");
+            const sdS = split("sdStart"), sdE = split("sdEnd");
+
+            try {
+                const r = await fetch("/saveWindows", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ledSH: ledS.h, ledSM: ledS.m, ledEH: ledE.h, ledEM: ledE.m,
+                        apSH: apS.h, apSM: apS.m, apEH: apE.h, apEM: apE.m,
+                        fanSH: fanS.h, fanSM: fanS.m, fanEH: fanE.h, fanEM: fanE.m,
+                        sdSH: sdS.h, sdSM: sdS.m, sdEH: sdE.h, sdEM: sdE.m,
+                        fanDur, threshold
+                    })
+                });
+                if (r.ok) alert("✅ Configuración guardada.");
+                else alert("❌ Error: " + (await r.json()).error);
+            } catch { alert("❌ Error de comunicación."); }
+        }
+
+        async function saveWifi() {
+            const ssid = document.getElementById('wifiSsid').value.trim();
+            const password = document.getElementById('wifiPass').value;
+            if (!ssid) { alert("Ingresa un SSID."); return; }
+            try {
+                const r = await fetch("/wifi", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ssid, password })
+                });
+                if (r.ok) alert("✅ Wi-Fi guardado. El equipo intentará conectarse.");
+                else alert("❌ Error guardando Wi-Fi.");
+            } catch { alert("❌ Error de comunicación."); }
+        }
+
+        async function clearWifi() {
+            if (!confirm("¿Olvidar la red Wi-Fi guardada?")) return;
+            try {
+                await fetch("/wifi", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ssid: "", password: "" })
+                });
+                document.getElementById('wifiSsid').value = "";
+                document.getElementById('wifiPass').value = "";
+                alert("Red olvidada.");
+            } catch { alert("❌ Error."); }
+        }
+
+        async function saveStorageMode() {
+            const mode = document.querySelector('input[name="storage"]:checked');
+            if (!mode) { alert("Selecciona un modo."); return; }
+            const deviceId = document.getElementById('deviceId').value.trim();
+            const deviceKey = document.getElementById('deviceKey').value;
+            try {
+                const r = await fetch("/storageMode", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mode: mode.value, deviceId, deviceKey })
+                });
+                if (r.ok) alert("✅ Modo de almacenamiento guardado.");
+                else alert("❌ Error guardando modo.");
+            } catch { alert("❌ Error de comunicación."); }
+        }
+
+        setInterval(actualizarDatos, 1000);
+        actualizarDatos();
+        cargarMeses();
+    </script>
+</body>
+</html>
