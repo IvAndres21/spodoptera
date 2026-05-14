@@ -14,6 +14,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include "secrets.h"   // copy secrets.example.h -> secrets.h (gitignored)
 
 Preferences preferences;
 
@@ -45,6 +46,11 @@ int fanEndH   = 4,  fanEndM   = 0;
 
 int sdStartH = 18, sdStartM = 30;
 int sdEndH   = 23, sdEndM   = 50;
+
+// Cloud send window — only used when storage mode is CLOUD or BOTH.
+// Default 00:00 -> 23:59 means "send during the whole AP window".
+int cloudStartH = 0,  cloudStartM = 0;
+int cloudEndH   = 23, cloudEndM   = 59;
 
 // ----------------------------------------------------------------------------
 //  SD Card
@@ -81,6 +87,12 @@ int FAN_ON_TIME    = 60000;
 const unsigned long EVALUATION_WINDOW = 60000 * 5;
 unsigned long fanStartTime  = 0;
 unsigned long lastEvaluation = 0;
+
+// IR sensor (MH-sensor series) — drives the area / insect counter
+const int IR_PIN = 25;
+bool previousIRState = LOW;
+unsigned long lastTriggerTime = 0;
+const unsigned long DEBOUNCE_TIME = 30;
 
 #define INTERRUPT_BUTTON 35
 enum DisplayMode { MODE_BMP, MODE_OPERATING_WINDOWS, MODE_TOTAL };
@@ -131,6 +143,10 @@ const char *cloudEndpoint = "https://spodoptera.vercel.app/api/measurements";
 String deviceKey = "";
 String deviceId  = "esp32-trap-001";
 
+// Near real-time cloud push (only active when storage mode is CLOUD or BOTH)
+unsigned long lastCloudPush = 0;
+const unsigned long cloudPushInterval = 2000;   // 2 s — as close to real time as practical
+
 // ----------------------------------------------------------------------------
 //  Prototypes
 // ----------------------------------------------------------------------------
@@ -138,6 +154,7 @@ void getTime();
 void readBMP();
 void showData();
 void LED_OP();
+void readIRSensor();
 void evaluateArea();
 void controlFan();
 
@@ -150,11 +167,13 @@ bool operatingWindow_AP();
 bool operatingWindow_SD();
 bool operatingWindow_LED();
 bool operatingWindow_Fan();
+bool operatingWindow_Cloud();
 
 void startSTA();
 void stopSTA();
 void manageSTA();
 bool sendToCloud(const JsonDocument &doc);
+void pushRealtime();
 void queuePending(const String &csvLine);
 void flushPendingBuffer();
 
@@ -236,6 +255,7 @@ void checkDeepSleep() {
 void taskControl(void *pv) {
   for (;;) {
     LED_OP();
+    readIRSensor();
     evaluateArea();
     controlFan();
     vTaskDelay(pdMS_TO_TICKS(2));
@@ -277,6 +297,7 @@ void taskComm(void *pv) {
     if (apIsActive) server.handleClient();
 
     manageSTA();
+    pushRealtime();
 
     if (systemData.sdAvailable
         && millis() - lastLogTime >= logInterval
@@ -328,6 +349,11 @@ void setup() {
   sdEndH   = preferences.getInt("sdEH", sdEndH);
   sdEndM   = preferences.getInt("sdEM", sdEndM);
 
+  cloudStartH = preferences.getInt("clSH", cloudStartH);
+  cloudStartM = preferences.getInt("clSM", cloudStartM);
+  cloudEndH   = preferences.getInt("clEH", cloudEndH);
+  cloudEndM   = preferences.getInt("clEM", cloudEndM);
+
   FAN_ON_TIME    = preferences.getInt("fanDur", FAN_ON_TIME);
   AREA_THRESHOLD = preferences.getInt("threshold", AREA_THRESHOLD);
 
@@ -335,8 +361,8 @@ void setup() {
   staPassword = preferences.getString("staPass", "");
   staEnabled  = staSsid.length() > 0;
   storageMode = (StorageMode)preferences.getInt("storageMode", STORAGE_LOCAL);
-  deviceKey   = preferences.getString("devKey", "");
-  deviceId    = preferences.getString("devId", "esp32-trap-001");
+  deviceKey   = preferences.getString("devKey", DEFAULT_DEVICE_KEY);
+  deviceId    = preferences.getString("devId", DEFAULT_DEVICE_ID);
 
   preferences.end();
 
@@ -346,6 +372,7 @@ void setup() {
   ledcAttach(ledPin, Freq, resolution);
   pinMode(FAN_PIN, OUTPUT);
   digitalWrite(FAN_PIN, LOW);
+  pinMode(IR_PIN, INPUT);
 
   Wire.begin();
   Wire.setClock(100000);
@@ -532,6 +559,41 @@ void flushPendingBuffer() {
   if (flushed > 0) Serial.printf("Pending flush: %d rows\n", flushed);
 }
 
+// ----------------------------------------------------------------------------
+//  Near real-time cloud push
+//  Sends the current readings to the cloud every cloudPushInterval ms, but only
+//  when: storage mode includes the cloud (CLOUD or BOTH), the time is inside the
+//  cloud window, and the STA link is up. Independent of the SD card and the SD
+//  window. Live data: a failed push is just retried next cycle (not queued).
+// ----------------------------------------------------------------------------
+void pushRealtime() {
+  if (storageMode != STORAGE_CLOUD && storageMode != STORAGE_BOTH) return;
+  if (!operatingWindow_Cloud()) return;
+  if (!staConnected) return;
+  if (millis() - lastCloudPush < cloudPushInterval) return;
+  lastCloudPush = millis();
+
+  char ts[24];
+  sprintf(ts, "%04d-%02d-%02dT%02d:%02d:%02d",
+          systemData.year, systemData.month, systemData.day,
+          systemData.hour, systemData.minute, systemData.second);
+
+  JsonDocument d;
+  d["device_id"]  = deviceId;
+  d["ts"]         = ts;
+  d["temp"]       = systemData.temperature;
+  d["pres"]       = systemData.pressure;
+  d["alt"]        = systemData.altitude;
+  d["led"]        = systemData.ledState;
+  d["fan"]        = systemData.loadState;
+  d["ap_active"]  = operatingWindow_AP();
+  d["led_active"] = operatingWindow_LED();
+  d["fan_active"] = operatingWindow_Fan();
+  d["sd_active"]  = operatingWindow_SD();
+
+  sendToCloud(d);
+}
+
 // ============================================================================
 //  Web handlers
 // ============================================================================
@@ -586,11 +648,14 @@ void handleEstado() {
   doc["apEH"]  = apEndH;    doc["apEM"]  = apEndM;
   doc["sdSH"]  = sdStartH;  doc["sdSM"]  = sdStartM;
   doc["sdEH"]  = sdEndH;    doc["sdEM"]  = sdEndM;
+  doc["clSH"]  = cloudStartH; doc["clSM"] = cloudStartM;
+  doc["clEH"]  = cloudEndH;   doc["clEM"] = cloudEndM;
 
-  doc["apActive"]  = operatingWindow_AP();
-  doc["ledActive"] = operatingWindow_LED();
-  doc["sdActive"]  = operatingWindow_SD();
-  doc["fanActive"] = operatingWindow_Fan();
+  doc["apActive"]    = operatingWindow_AP();
+  doc["ledActive"]   = operatingWindow_LED();
+  doc["sdActive"]    = operatingWindow_SD();
+  doc["fanActive"]   = operatingWindow_Fan();
+  doc["cloudActive"] = operatingWindow_Cloud();
 
   doc["fanDur"]    = FAN_ON_TIME / 60000;
   doc["threshold"] = AREA_THRESHOLD;
@@ -783,13 +848,27 @@ void handleStorageMode() {
   else if (modeStr == "CLOUD") storageMode = STORAGE_CLOUD;
   else if (modeStr == "BOTH")  storageMode = STORAGE_BOTH;
 
-  if (doc.containsKey("deviceKey")) deviceKey = doc["deviceKey"].as<String>();
-  if (doc.containsKey("deviceId"))  deviceId  = doc["deviceId"].as<String>();
+  // Keep the preconfigured key/id when the dashboard sends them empty.
+  if (doc.containsKey("deviceKey")) {
+    String k = doc["deviceKey"].as<String>();
+    if (k.length() > 0) deviceKey = k;
+  }
+  if (doc.containsKey("deviceId")) {
+    String i = doc["deviceId"].as<String>();
+    if (i.length() > 0) deviceId = i;
+  }
+
+  if (doc.containsKey("clSH")) {
+    cloudStartH = doc["clSH"]; cloudStartM = doc["clSM"];
+    cloudEndH   = doc["clEH"]; cloudEndM   = doc["clEM"];
+  }
 
   preferences.begin("config", false);
   preferences.putInt("storageMode", (int)storageMode);
   preferences.putString("devKey", deviceKey);
   preferences.putString("devId",  deviceId);
+  preferences.putInt("clSH", cloudStartH); preferences.putInt("clSM", cloudStartM);
+  preferences.putInt("clEH", cloudEndH);   preferences.putInt("clEM", cloudEndM);
   preferences.end();
 
   server.send(200, "application/json", "{\"message\":\"Storage mode updated\"}");
@@ -818,10 +897,11 @@ bool isInsideWindow(int sH, int sM, int eH, int eM) {
   if (start < end) return (current >= start && current < end);
   return (current >= start || current < end);
 }
-bool operatingWindow_AP()  { return isInsideWindow(apStartH, apStartM, apEndH, apEndM); }
-bool operatingWindow_LED() { return isInsideWindow(ledStartH, ledStartM, ledEndH, ledEndM); }
-bool operatingWindow_SD()  { return isInsideWindow(sdStartH, sdStartM, sdEndH, sdEndM); }
-bool operatingWindow_Fan() { return isInsideWindow(fanStartH, fanStartM, fanEndH, fanEndM); }
+bool operatingWindow_AP()    { return isInsideWindow(apStartH, apStartM, apEndH, apEndM); }
+bool operatingWindow_LED()   { return isInsideWindow(ledStartH, ledStartM, ledEndH, ledEndM); }
+bool operatingWindow_SD()    { return isInsideWindow(sdStartH, sdStartM, sdEndH, sdEndM); }
+bool operatingWindow_Fan()   { return isInsideWindow(fanStartH, fanStartM, fanEndH, fanEndM); }
+bool operatingWindow_Cloud() { return isInsideWindow(cloudStartH, cloudStartM, cloudEndH, cloudEndM); }
 
 // ============================================================================
 //  RTC + BMP180
@@ -867,6 +947,33 @@ void LED_OP() {
     ledcWrite(ledPin, currentState ? dutyCycle : 0);
     lastState = currentState;
   }
+}
+
+// ----------------------------------------------------------------------------
+//  IR sensor (MH-sensor series)
+//  Counts each insect crossing the trap area on a LOW->HIGH edge of the
+//  sensor's digital output. Counting is paused — and the counter cleared —
+//  while the fan load is running, so detections during a capture are ignored.
+//  Feeds areaCounter, which evaluateArea() compares against AREA_THRESHOLD.
+// ----------------------------------------------------------------------------
+void readIRSensor() {
+  unsigned long now = millis();
+  bool currentState = digitalRead(IR_PIN);
+
+  if (!systemData.loadState) {
+    if (currentState == HIGH && previousIRState == LOW) {  // rising edge
+      if (now - lastTriggerTime > DEBOUNCE_TIME) {
+        areaCounter++;
+        systemData.areaCount = areaCounter;
+        lastTriggerTime = now;
+        Serial.printf("Movement detected! Current count: %d\n", areaCounter);
+      }
+    }
+  } else {
+    areaCounter = 0;            // fan active: stop counting, reset for next cycle
+    systemData.areaCount = 0;
+  }
+  previousIRState = currentState;
 }
 
 void evaluateArea() {

@@ -21,6 +21,7 @@ web/.vercel
 .DS_Store
 *.pem
 *.log
+.Rhistory
 
 # debug
 npm-debug.log*
@@ -34,3 +35,4 @@ next-env.d.ts
 # arduino
 firmware/build/
 firmware/*.bin
+firmware/secrets.h

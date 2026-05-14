@@ -198,6 +198,10 @@
                     <span>💾 SD Logging</span>
                     <div id="sdStatus" class="status-indicator off">INACTIVE</div>
                 </div>
+                <div class="status-item">
+                    <span>☁️ Cloud Send</span>
+                    <div id="cloudStatus" class="status-indicator off">INACTIVE</div>
+                </div>
             </div>
 
             <div class="card">
@@ -299,21 +303,21 @@
                 </p>
                 <div class="storage-options">
                     <label class="storage-option">
-                        <input type="radio" name="storage" value="LOCAL">
+                        <input type="radio" name="storage" value="LOCAL" onchange="toggleCloudWindow()">
                         <div>
                             <div class="storage-title">📁 Local</div>
                             <div class="storage-desc">Only on the device's SD card</div>
                         </div>
                     </label>
                     <label class="storage-option">
-                        <input type="radio" name="storage" value="CLOUD">
+                        <input type="radio" name="storage" value="CLOUD" onchange="toggleCloudWindow()">
                         <div>
                             <div class="storage-title">☁️ Cloud</div>
                             <div class="storage-desc">Only send to spodoptera.vercel.app</div>
                         </div>
                     </label>
                     <label class="storage-option">
-                        <input type="radio" name="storage" value="BOTH">
+                        <input type="radio" name="storage" value="BOTH" onchange="toggleCloudWindow()">
                         <div>
                             <div class="storage-title">🔁 Both</div>
                             <div class="storage-desc">SD + Cloud (recommended)</div>
@@ -327,7 +331,22 @@
                 </div>
                 <div class="info-group">
                     <label for="deviceKey">Device key (X-Device-Key)</label>
-                    <input type="password" id="deviceKey" placeholder="Shared key with the backend">
+                    <input type="password" id="deviceKey" placeholder="Preconfigured — leave empty to keep it">
+                </div>
+
+                <div id="cloudWindowConfig" style="display: none;">
+                    <div class="info-group" style="margin-top: 20px;">
+                        <label>☁️ Cloud send window</label>
+                        <p class="card-subtitle">
+                            Only send to the cloud between these times. Outside this
+                            window the trap keeps logging to the SD card (if enabled).
+                        </p>
+                        <div class="time-inputs">
+                            <input type="time" id="cloudStart">
+                            <span class="time-separator">→</span>
+                            <input type="time" id="cloudEnd">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="button-group">
@@ -464,6 +483,7 @@
                 updateStatus("ledStatusIndicator", data.ledActive);
                 updateStatus("fanStatus", data.fanActive);
                 updateStatus("sdStatus", data.sdActive);
+                updateStatus("cloudStatus", data.cloudActive);
 
                 const staInd = document.getElementById('staIndicator');
                 if (staInd) {
@@ -481,6 +501,11 @@
                         const cur = modeMap[data.storageMode] || 'LOCAL';
                         const radio = document.querySelector(`input[name="storage"][value="${cur}"]`);
                         if (radio) radio.checked = true;
+                        toggleCloudWindow();
+                        if (data.clSH !== undefined) {
+                            document.getElementById('cloudStart').value = formatTime(data.clSH, data.clSM);
+                            document.getElementById('cloudEnd').value = formatTime(data.clEH, data.clEM);
+                        }
                         if (data.staSsid && !document.getElementById('wifiSsid').value) {
                             document.getElementById('wifiSsid').value = data.staSsid;
                         }
@@ -540,7 +565,7 @@
                 document.getElementById('downloadGroup').style.display = 'flex';
                 parseAndChart(text);
                 showMessage("Data loaded");
-            } catch (e) { showMessage("Error loading file", "error"); }
+            } catch (e) { showMessage("Error loading file: " + e.message, "error"); }
         }
 
         function parseAndChart(csv) {
@@ -560,6 +585,10 @@
         }
 
         function renderChart(data) {
+            if (typeof Chart === 'undefined') {
+                showMessage("chart.js is missing — copy chart.js to the SD card root", "error");
+                return;
+            }
             const datasets = [];
             const ctx = document.getElementById('myChart').getContext('2d');
 
@@ -688,16 +717,34 @@
             } catch { alert("❌ Error."); }
         }
 
+        function toggleCloudWindow() {
+            const mode = document.querySelector('input[name="storage"]:checked');
+            const show = mode && (mode.value === 'CLOUD' || mode.value === 'BOTH');
+            document.getElementById('cloudWindowConfig').style.display = show ? 'block' : 'none';
+        }
+
         async function saveStorageMode() {
             const mode = document.querySelector('input[name="storage"]:checked');
             if (!mode) { alert("Select a mode."); return; }
             const deviceId = document.getElementById('deviceId').value.trim();
             const deviceKey = document.getElementById('deviceKey').value;
+            const body = { mode: mode.value, deviceId, deviceKey };
+
+            if (mode.value === 'CLOUD' || mode.value === 'BOTH') {
+                const cs = document.getElementById('cloudStart').value;
+                const ce = document.getElementById('cloudEnd').value;
+                if (cs && ce) {
+                    const [csh, csm] = cs.split(':').map(Number);
+                    const [ceh, cem] = ce.split(':').map(Number);
+                    body.clSH = csh; body.clSM = csm; body.clEH = ceh; body.clEM = cem;
+                }
+            }
+
             try {
                 const r = await fetch("/storageMode", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ mode: mode.value, deviceId, deviceKey })
+                    body: JSON.stringify(body)
                 });
                 if (r.ok) alert("✅ Storage mode saved.");
                 else alert("❌ Error saving mode.");
